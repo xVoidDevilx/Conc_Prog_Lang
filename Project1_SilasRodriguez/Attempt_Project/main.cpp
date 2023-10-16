@@ -2,6 +2,8 @@
 #include <cctype>
 #include <cstring>
 #include <string>
+#include <cstdio>
+#include <cstdlib>
 
 #include "front.h"
 #include "parser.h"

@@ -7,7 +7,7 @@ dcooke_analyzer: main.o parser.o
 	$(CC) $(CFLAGS) -o $@ main.o parser.o
 	
 .cpp.o:
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -std=c++11 $(CFLAGS) -c $<
 
 clean:
 ifeq ($(OS),Windows_NT)
