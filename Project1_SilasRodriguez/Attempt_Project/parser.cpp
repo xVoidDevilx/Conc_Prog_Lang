@@ -54,9 +54,7 @@ void factor()
     std::cout << "Enter <factor>" << std::endl;
     /* Determine which RHS */
     if (nextToken == IDENT || nextToken == INT_LIT)
-    {
         lex(); /* Get the next token */
-    }
     else
     {
         /* If the RHS is (<expr>), call lex to pass over the
@@ -68,19 +66,13 @@ void factor()
             expr();
 
             if (nextToken == RIGHT_PAREN)
-            {
                 lex();
-            }
             else
-            {
                 error();
-            }
         } /* End of if (nextToken == ... */
         /* It was not an id, an integer literal, or a left parenthesis */
         else
-        {
             error();
-        }
     } /* End of else */
     std::cout << "Exit <factor>" << std::endl;
 } /* End of function factor */

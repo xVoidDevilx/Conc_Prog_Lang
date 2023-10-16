@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cctype>
+#include <cstring>
+#include <string>
 
 #include "front.h"
 #include "parser.h"
@@ -40,23 +42,47 @@ static int lookup(char ch)
         break;
     case '{':
         addChar();
-        nextToken = LEFT_BRACK;
+        nextToken = LEFT_CBRACE;
         break;
     case '}':
         addChar();
-        nextToken = RIGHT_BRACK;
+        nextToken = RIGHT_CBRACE;
         break;
+    // could be INC_OP or ADD_OP
     case '+':
-        addChar();
-        nextToken = ADD_OP;
+        addChar(); // push into lexeme
+        getChar(); // check next char
+        if (nextChar == '+')
+        {
+            nextToken = INC_OP;
+            addChar();
+        }
+        else
+            nextToken = ADD_OP;
         break;
+    // could be DEC_OP or ADD_OP
     case '-':
-        addChar();
-        nextToken = SUB_OP;
+        addChar(); // push into lexeme
+        getChar(); // check next char
+        if (nextChar == '-')
+        {
+            nextToken = DEC_OP;
+            addChar();
+        }
+        else
+            nextToken = SUB_OP;
         break;
+    // could be ASSIGN_OP or EQUAL_OP
     case '=':
-        addChar();
-        nextToken = ASSIGN_OP;
+        addChar(); // push into lexeme
+        getChar(); // check next char
+        if (nextChar == '=')
+        {
+            nextToken = EQUAL_OP;
+            addChar();
+        }
+        else
+            nextToken = ASSIGN_OP;
         break;
     case '*':
         addChar();
@@ -68,7 +94,7 @@ static int lookup(char ch)
         break;
     case ';':
         addChar();
-        nextToken = SEMICOL;
+        nextToken = SEMICOLON;
         break;
     default:
         addChar();
@@ -88,9 +114,7 @@ static void addChar()
         lexeme[lexLen] = 0;
     }
     else
-    {
         cerr << "Error - lexeme is too long" << endl;
-    }
 }
 
 /*****************************************************/
@@ -108,9 +132,7 @@ static void getChar()
             charClass = UNKNOWN;
     }
     else
-    {
         charClass = EOF;
-    }
 }
 
 /*****************************************************/
@@ -140,7 +162,17 @@ int lex()
             addChar();
             getChar();
         }
-        nextToken = IDENT;
+        // read(V)
+        if (strcmp(lexeme, "read") == 0)
+            nextToken = KEY_READ;
+        else if (strcmp(lexeme, "write") == 0)
+            nextToken = KEY_WRITE;
+        else if (strcmp(lexeme, "while") == 0)
+            nextToken = KEY_WHILE;
+        else if (strcmp(lexeme, "do") == 0)
+            nextToken = KEY_DO;
+        else
+            nextToken = IDENT;
         break;
 
     /* Parse integer literals */
@@ -170,8 +202,9 @@ int lex()
         lexeme[3] = 0;
         break;
     } /* End of switch */
-
-    cout << "Next token is: " << nextToken << ", Next lexeme is " << lexeme << endl;
+    // if not the end of file, print the lexeme and token, but always return
+    if (!strcmp(lexeme, "EOF") == 0)
+        printf("%-10s %d\n\r", lexeme, nextToken);
     return nextToken;
 } /* End of function lex */
 
