@@ -18,6 +18,7 @@ static std::string strNextToken;
 static char nextChar;
 static int lexLen;
 static FILE *in_fp;
+static bool handled;
 
 /* Local Function declarations */
 static void addChar();
@@ -33,6 +34,8 @@ using std::endl;
  * token */
 static int lookup(char ch)
 {
+    // Handled true by default
+    handled = true;
     switch (ch)
     {
     case '(':
@@ -61,7 +64,10 @@ static int lookup(char ch)
             addChar();
         }
         else
+        {
             nextToken = ADD_OP;
+            handled = false; // update that the latest token was not handled
+        }
         break;
     // could be DEC_OP or ADD_OP
     case '-':
@@ -73,7 +79,10 @@ static int lookup(char ch)
             addChar();
         }
         else
+        {
             nextToken = SUB_OP;
+            handled = false;
+        }
         break;
     // could be ASSIGN_OP or EQUAL_OP
     case '=':
@@ -86,7 +95,10 @@ static int lookup(char ch)
         }
         // add a bool or back up a file pointer
         else
+        {
             nextToken = ASSIGN_OP;
+            handled = false;
+        }
         break;
     case '*':
         addChar();
@@ -169,12 +181,16 @@ int lex()
         // read(V)
         if (strcmp(lexeme, "read") == 0)
             nextToken = KEY_READ;
+        // write(V)
         else if (strcmp(lexeme, "write") == 0)
             nextToken = KEY_WRITE;
+        // while ()
         else if (strcmp(lexeme, "while") == 0)
             nextToken = KEY_WHILE;
+        // do ()
         else if (strcmp(lexeme, "do") == 0)
             nextToken = KEY_DO;
+        // Identifier
         else
             nextToken = IDENT;
         break;
@@ -210,8 +226,9 @@ int lex()
     // if not the end of file, print the lexeme and token, but always return    -
     if (!strcmp(lexeme, "EOF") == 0)
     {
-        retDirective(nextToken); // update strNext Token
-        std::cout << lexeme << "\t\t" << strNextToken << endl;
+        retDirective(nextToken);             // update strNext Token
+        const char *c = strNextToken.data(); // convert to char *
+        printf("%-10s %s\n\r", lexeme, c);
     }
     return nextToken;
 } /* End of function lex */
