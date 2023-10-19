@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdio>
 #include <cstdlib>
+#include <iomanip>
 
 #include "front.h"
 #include "parser.h"
@@ -14,6 +15,7 @@ int nextToken;
 /* Local Variables */
 static int charClass;
 static char lexeme[100];
+static std::string strNextToken;
 static char nextChar;
 static int lexLen;
 static FILE *in_fp;
@@ -22,9 +24,9 @@ static FILE *in_fp;
 static void addChar();
 static void getChar();
 static void getNonBlank();
+static void retDirective(int Token);
 
 using std::cerr;
-using std::cout;
 using std::endl;
 
 /******************************************************/
@@ -83,6 +85,7 @@ static int lookup(char ch)
             nextToken = EQUAL_OP;
             addChar();
         }
+        // add a bool or back up a file pointer
         else
             nextToken = ASSIGN_OP;
         break;
@@ -204,9 +207,13 @@ int lex()
         lexeme[3] = 0;
         break;
     } /* End of switch */
-    // if not the end of file, print the lexeme and token, but always return
+
+    // if not the end of file, print the lexeme and token, but always return    -
     if (!strcmp(lexeme, "EOF") == 0)
-        printf("%-10s %d\n\r", lexeme, nextToken);
+    {
+        retDirective(nextToken); // update strNext Token
+        std::cout << std::left << std::setw(10) << lexeme << strNextToken << endl;
+    }
     return nextToken;
 } /* End of function lex */
 
@@ -214,13 +221,13 @@ int main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
+        cerr << "Usage: " << argv[0] << " <input_file>" << endl;
         return 1;
     }
 
     if ((in_fp = fopen(argv[1], "r")) == nullptr)
     { // Open the file specified as a command-line argument
-        std::cerr << "ERROR - cannot open " << argv[1] << std::endl;
+        cerr << "ERROR - cannot open " << argv[1] << endl;
         return 1;
     }
     else
@@ -235,4 +242,89 @@ int main(int argc, char **argv)
 
     fclose(in_fp); // Close the file when done
     return 0;
+}
+
+// Add a function to map int to string to directive
+static void retDirective(int Token)
+{
+    switch (Token)
+    {
+    case ASSIGN_OP:
+        strNextToken = "ASSIGN_OP";
+        break;
+    case LESSER_OP:
+        strNextToken = "LESSER_OP";
+        break;
+    case GREATER_OP:
+        strNextToken = "GREATER_OP";
+        break;
+    case EQUAL_OP:
+        strNextToken = "EQUAL_OP";
+        break;
+    case NEQUAL_OP:
+        strNextToken = "NEQUAL_OP";
+        break;
+    case LEQUAL_OP:
+        strNextToken = "LEQUAL_OP";
+        break;
+    case GEQUAL_OP:
+        strNextToken = "GEQUAL_OP";
+        break;
+    case SEMICOLON:
+        strNextToken = "SEMICOLON";
+        break;
+
+    case ADD_OP:
+        strNextToken = "ADD_OP";
+        break;
+    case SUB_OP:
+        strNextToken = "SUB_OP";
+        break;
+    case MULT_OP:
+        strNextToken = "MULT_OP";
+        break;
+    case DIV_OP:
+        strNextToken = "DIV_OP";
+        break;
+    case INC_OP:
+        strNextToken = "INC_OP";
+        break;
+    case DEC_OP:
+        strNextToken = "DEC_OP";
+        break;
+    case LEFT_PAREN:
+        strNextToken = "LEFT_PAREN";
+        break;
+    case RIGHT_PAREN:
+        strNextToken = "RIGHT_PAREN";
+        break;
+
+    case LEFT_CBRACE:
+        strNextToken = "LEFT_CBRACE";
+        break;
+    case RIGHT_CBRACE:
+        strNextToken = "RIGHT_CBRACE";
+        break;
+    case KEY_READ:
+        strNextToken = "KEY_READ";
+        break;
+    case KEY_WRITE:
+        strNextToken = "KEY_WRITE";
+        break;
+    case KEY_WHILE:
+        strNextToken = "KEY_WHILE";
+        break;
+    case KEY_DO:
+        strNextToken = "KEY_DO";
+        break;
+    case IDENT:
+        strNextToken = "IDENT";
+        break;
+    case INT_LIT:
+        strNextToken = "INT_LIT";
+        break;
+    default:
+        strNextToken = "UNKNOWN";
+        break;
+    }
 }
