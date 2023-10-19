@@ -229,7 +229,8 @@ int lex()
     /* Parentheses and operators */
     case UNKNOWN:
         lookup(nextChar);
-        getChar();
+        if (handled)
+            getChar();
         break;
 
     /* EOF */
