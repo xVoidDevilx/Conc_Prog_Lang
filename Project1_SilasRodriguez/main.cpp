@@ -99,8 +99,21 @@ static int lookup(char ch)
                 nextToken = NEQUAL_OP;
             addChar(); // add into the lexeme
         }
+        else if (ch == '>')
+        {
+            nextToken = GREATER_OP;
+            handled = false;
+        }
+        else if (ch == '<')
+        {
+            nextToken = LESSER_OP;
+            handled = false;
+        }
         else
+        {
             nextToken = UNKNOWN;
+            handled = false;
+        }
         break;
 
     // could be ASSIGN_OP or EQUAL_OP
