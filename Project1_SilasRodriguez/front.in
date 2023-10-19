@@ -1,22 +1,8 @@
 f=1;
-i=1;
+i=1$$#;
 read(n);
 do
 {
         f=f*i;
         i=i++
-} while (i >= n);
-
-t = x;
-do
-{
-        q= n / x;
-        x=0
-} while ( x<=0 );
-
-x=t
-do
-        q= n;
-        x=1
-while (x>0);
-x=t;
+} while (i == n)

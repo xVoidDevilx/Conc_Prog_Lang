@@ -146,7 +146,10 @@ static int lookup(char ch)
         break;
     default:
         addChar();
-        nextToken = EOF;
+        if (ch == EOF)
+            nextToken = EOF;
+        else
+            nextToken = UNKNOWN;
         break;
     }
     return nextToken;
