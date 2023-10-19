@@ -219,6 +219,8 @@ int lex()
 
 int main(int argc, char **argv)
 {
+    std::cout << "DCooke Analyzer :: R11679913" << endl;
+
     if (argc != 2)
     {
         cerr << "Usage: " << argv[0] << " <input_file>" << endl;
