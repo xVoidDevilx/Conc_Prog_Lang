@@ -84,6 +84,19 @@ static int lookup(char ch)
             handled = false;
         }
         break;
+
+    case '!':
+        addChar(); // push into lexeme
+        getChar(); // check next char
+        if (nextChar == '=')
+        {
+            nextToken = NEQUAL_OP;
+            addChar(); // add into the lexeme
+        }
+        else
+            nextToken = UNKNOWN;
+        break;
+
     // could be ASSIGN_OP or EQUAL_OP
     case '=':
         addChar(); // push into lexeme
