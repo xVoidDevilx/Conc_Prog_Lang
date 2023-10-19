@@ -84,13 +84,19 @@ static int lookup(char ch)
             handled = false;
         }
         break;
-
+    case '<':
+    case '>':
     case '!':
         addChar(); // push into lexeme
         getChar(); // check next char
         if (nextChar == '=')
         {
-            nextToken = NEQUAL_OP;
+            if (ch == '>')
+                nextToken = GEQUAL_OP;
+            else if (ch == '<')
+                nextToken = LEQUAL_OP;
+            else
+                nextToken = NEQUAL_OP;
             addChar(); // add into the lexeme
         }
         else
