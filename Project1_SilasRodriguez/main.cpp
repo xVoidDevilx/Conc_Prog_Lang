@@ -4,7 +4,6 @@
 #include <string>
 #include <cstdio>
 #include <cstdlib>
-#include <iomanip>
 
 #include "front.h"
 #include "parser.h"
@@ -212,7 +211,7 @@ int lex()
     if (!strcmp(lexeme, "EOF") == 0)
     {
         retDirective(nextToken); // update strNext Token
-        std::cout << std::left << std::setw(10) << lexeme << strNextToken << endl;
+        std::cout << lexeme << "\t\t" << strNextToken << endl;
     }
     return nextToken;
 } /* End of function lex */
