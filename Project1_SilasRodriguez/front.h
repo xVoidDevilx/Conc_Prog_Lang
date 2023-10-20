@@ -1,3 +1,15 @@
+/*
+=============================================================================
+Title : front.h
+Description : This is a header for the lexical analyzer program.
+Author : silrodri (R#11679913)
+Date : 10/19/2023
+Version : 1.0
+Usage : Imported into main.cpp and parser.cpp
+Notes : This example program has no requirements.
+C++ Version : cpp (GCC) 4.8.5 20150623 (Red Hat 4.8.5-16)
+=============================================================================
+*/
 #ifndef FRONT_H
 #define FRONT_H
 

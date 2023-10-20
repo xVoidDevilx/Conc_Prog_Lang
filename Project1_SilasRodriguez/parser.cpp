@@ -1,3 +1,15 @@
+/*
+=============================================================================
+Title : parser.cpp
+Description : This is part of a syntax analyzer program.
+Author : silrodri (R#11679913)
+Date : 10/19/2023
+Version : 1.0
+Usage : Compile and run this program using 'make' and ./dcooke_analyzer [file]
+Notes : This program is dependent on the lexical analyzer program (main.cpp / dcooke_analyzer).
+C++ Version : cpp (GCC) 4.8.5 20150623 (Red Hat 4.8.5-16)
+=============================================================================
+*/
 #include <iostream>
 #include "parser.h"
 #include "front.h"

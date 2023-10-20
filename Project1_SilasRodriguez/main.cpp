@@ -1,3 +1,15 @@
+/*
+=============================================================================
+Title : main.cpp
+Description : This is a lexical analyzer program.
+Author : silrodri (R#11679913)
+Date : 10/19/2023
+Version : 1.0
+Usage : Compile and run this program using 'make' and ./dcooke_analyzer [file]
+Notes : This example program has no requirements.
+C++ Version : cpp (GCC) 4.8.5 20150623 (Red Hat 4.8.5-16)
+=============================================================================
+*/
 #include <iostream>
 #include <cctype>
 #include <cstring>
@@ -34,7 +46,7 @@ using std::endl;
  * token */
 static int lookup(char ch)
 {
-    // Handled true by default
+    // Handled true by default for "processing the character"
     handled = true;
     switch (ch)
     {
@@ -66,7 +78,7 @@ static int lookup(char ch)
         else
         {
             nextToken = ADD_OP;
-            handled = false; // update that the latest token was not handled
+            handled = false; // update that the latest token was not handled yet
         }
         break;
     // could be DEC_OP or ADD_OP
@@ -271,14 +283,17 @@ int lex()
 
 int main(int argc, char **argv)
 {
+    // Echo the R # for the grader
     std::cout << "DCooke Analyzer :: R11679913" << endl;
 
+    // check for an input file being passed
     if (argc != 2)
     {
         cerr << "Usage: " << argv[0] << " <input_file>" << endl;
         return 1;
     }
 
+    // Error opening the specified file
     if ((in_fp = fopen(argv[1], "r")) == nullptr)
     { // Open the file specified as a command-line argument
         cerr << "ERROR - cannot open " << argv[1] << endl;
@@ -298,7 +313,11 @@ int main(int argc, char **argv)
     return 0;
 }
 
-// Add a function to map int to string to directive
+/**
+ * @brief This function maps all the token identifiers (ints) -> string counterparts of their directives
+ *
+ * @param Token -> int from lookup, pass in nextToken
+ */
 static void retDirective(int Token)
 {
     switch (Token)
