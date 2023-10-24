@@ -57,10 +57,7 @@ void statement()
         }
         // Missing left paren
         else
-        {
             error("Expected '('");
-            lex(); // keep looking for errors
-        }
         break;
     // do {statements} while(conditional)
     case KEY_DO:
@@ -89,25 +86,15 @@ void statement()
                 }
                 // missing left paren
                 else
-                {
                     error("Expected '('");
-                    lex(); // keep looking for errors
-                }
             }
             // missing while(conditional)
             else
-            {
-                error("Expected 'while(conditional)'"); // dont lex this one just once, things will get nasty...
-                for (size_t i = 0; i < 4; i++)
-                    lex(); // should make up the expected while, (, cond, )
-            }
+                error("Expected 'while(conditional)'");
         }
         // Missing left cbrace
         else
-        {
             error("Expected '{'");
-            lex(); // keep looking for errors
-        }
         break;
     // error last line statement entrance
     case SEMICOLON:
@@ -214,14 +201,6 @@ void factor()
         break;
     }
 } /* End of function factor */
-
-/**
- * @brief Handle identifiers
- */
-
-/**
- * @brief Handle litsrcs
- */
 
 /**
  * @brief Error handler routine

@@ -1,4 +1,4 @@
-f=1
+f=1;
 i=1;
 read(n);
 do
@@ -8,8 +8,8 @@ do
 } while (i == n);
 
 t = x;
-do
-{
+do{
+
 	q= n / x;
 	x=0
 } while ( x!=0 );
