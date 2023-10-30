@@ -35,5 +35,4 @@ typedef enum exitCodes
 } exitCode;
 
 extern exitCode exit_code;
-
 #endif
