@@ -9,13 +9,3 @@ do {
 
 writeaverage = sum / counter;
 write(writeaverage);
-
-
-x=counter;
-do {
-        q = sum;
-        x = ((sum * sum) + 12 - (x++ / 2)  );
-}
-while (x >= 0);
-
-write(x)

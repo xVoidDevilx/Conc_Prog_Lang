@@ -286,7 +286,7 @@ int lex()
 /**
  * @brief : Head function for controlling the program execution
  *
- * @param argc : tokens passed from command line
+ * @param argc : Num of tokens passed from command line
  * @param argv : argument vector passed from command line
  * @return int : exit_code updated from syntax parser
  */
@@ -322,8 +322,8 @@ int main(int argc, char **argv)
             statement();
         } while (nextToken != EOF && exit_code != SyntaxError);
     }
-
     fclose(in_fp); // Close the file when done
+
     if (exit_code == NoError)
         cout << "Syntax Validated: Exit(" << exit_code << ")"
              << endl;

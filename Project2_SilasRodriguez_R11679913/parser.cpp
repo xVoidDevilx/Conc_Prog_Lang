@@ -97,8 +97,8 @@ void statement()
             error("Expected '{'");
         break;
     // error last line statement entrance
-    case SEMICOLON:
-        error("Last line does not support semicolon ';' placement");
+    case EOF:
+        error("Last line does not support semicolon ';'");
         break;
     // unsupported entrance - expected last statement no semicolon
     default:
@@ -115,7 +115,7 @@ void statement()
 
 /**
  * @brief Conditional: Return the checks for a conditional statment
- *
+ *  expr (op) expr
  */
 void conditional()
 {
@@ -210,7 +210,7 @@ void factor()
 static void error(std::string details)
 {
     exit_code = SyntaxError;
-    cerr << "Syntax Error detected: " << details << endl
+    cerr << "error detected: " << details << endl
          << lexeme << " was the next lexeme "
          << strNextToken << " was the next token" << endl;
 }
