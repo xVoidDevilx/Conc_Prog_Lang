@@ -320,7 +320,7 @@ int main(int argc, char **argv)
         {
             lex();
             statement();
-        } while (nextToken != EOF);
+        } while (nextToken != EOF && exit_code != SyntaxError);
     }
 
     fclose(in_fp); // Close the file when done

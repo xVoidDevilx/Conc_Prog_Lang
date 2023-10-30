@@ -1,0 +1,23 @@
+sum = 0;
+counter = 0;
+
+do {
+        read(mynum);
+        sum = sum + mynum;
+        counter = counter++
+} while (mynum != 0);
+
+average = sum % counter;
+write(average)
+quanah:$ cat /lustre/work/errees/courses/cs3361/syntax_parser/input_files/exit1_1.dc
+sum = 0;
+counter = 0;
+
+do {
+        read(readnum);
+        sum = sum + readnum;
+        counter = counter++
+} while (readnum != 0);
+
+writeaverage = sum / counter
+write(writeaverage)

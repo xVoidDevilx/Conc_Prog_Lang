@@ -111,7 +111,6 @@ void statement()
         lex();       // move on to next statement
         statement(); // move s;s -> s
     }
-    // expected last statement:
 }
 
 /**
@@ -144,7 +143,7 @@ void expr()
     // call term
     term();
     // check for operations with other term; if any
-    if (nextToken == ADD_OP || nextToken == SUB_OP)
+    while (nextToken == ADD_OP || nextToken == SUB_OP)
     {
         lex();
         term();
@@ -160,11 +159,13 @@ void term()
     // call factor
     factor();
     // check for operations with another factor; if any
-    if (nextToken == MULT_OP || nextToken == DIV_OP)
+    while (nextToken == MULT_OP || nextToken == DIV_OP)
     {
         lex();
         factor();
     }
+    if (nextToken == UNKNOWN)
+        error("Invalid Operation");
 } /* End of function term */
 
 /* factor

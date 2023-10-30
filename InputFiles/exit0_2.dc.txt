@@ -1,0 +1,21 @@
+sum = 0;
+counter = 0;
+
+do {
+        read(readnum);
+        sum = sum + readnum;
+        counter = counter++
+} while (readnum != 0);
+
+writeaverage = sum / counter;
+write(writeaverage);
+
+
+x=counter;
+do {
+        q = sum;
+        x = ((sum * sum) + 12 - (x++ / 2)  )
+}
+while (x >= 0);
+
+write(x)

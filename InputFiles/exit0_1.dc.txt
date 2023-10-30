@@ -1,0 +1,11 @@
+sum = 0;
+counter = 0;
+
+do {
+        read(readnum);
+        sum = sum + readnum;
+        counter = counter++
+} while (readnum != 0);
+
+writeaverage = sum / counter;
+write(writeaverage)

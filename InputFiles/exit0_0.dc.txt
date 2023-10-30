@@ -1,0 +1,11 @@
+sum = 0;
+counter = 0;
+
+do {
+        read(mynum);
+        sum = sum + mynum;
+        counter = counter++
+} while (mynum != 0);
+
+average = sum / counter;
+write(average)
