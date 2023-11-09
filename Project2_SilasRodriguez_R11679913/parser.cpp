@@ -212,7 +212,7 @@ void factor()
 static void error(std::string details)
 {
     exit_code = shadowCode = SyntaxError;
-    cerr << "error detected: " << details << endl
+    cout << "error detected: " << details << endl
          << lexeme << " was the next lexeme "
          << strNextToken << " was the next token" << endl;
 }
