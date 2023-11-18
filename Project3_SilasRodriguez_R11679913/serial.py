@@ -1,7 +1,7 @@
 import argparse
 from decryptLetter import decryptLetter
 import re
-
+from time import time
 """
     @author: Silas Rodriguez
     @brief: uses regex to justify valid seeds
@@ -83,6 +83,7 @@ def main(argv:argparse.Namespace, *args, **kwargs):
                     'b': (1, lambda prime,even: 'b' if prime else 'c' if even else 'a'),
                     'c': (2, lambda prime,even: 'c' if prime else 'a' if even else 'b')}
         
+        start = time()
         # use the generator to itterate through all the time steps, using enummerate, we can track the itterations since this is an infinite generator
         for step, matrix_step in enumerate(timeStep(matrix=matrix, hashgrid=hashGrid)):
             if step >= 99:
@@ -97,7 +98,7 @@ def main(argv:argparse.Namespace, *args, **kwargs):
         # Write to Output File:
         with open(argv.output, 'w') as outFile:
             outFile.write(decryptedString)
-
+        print(f'Decryption time: {time() - start}')
 if __name__ == '__main__':
     # Phase 1.1: Data Retrieval
     print('Project :: R11679913')
