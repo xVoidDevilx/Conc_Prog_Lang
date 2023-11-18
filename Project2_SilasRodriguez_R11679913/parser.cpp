@@ -19,6 +19,7 @@ using std::cout;
 using std::endl;
 
 static void error(std::string details);
+static exitCode shadowCode = NoError;
 
 /**
  * @brief Handle statement call
@@ -56,7 +57,7 @@ void statement()
             }
         }
         // Missing left paren
-        else
+        else if (shadowCode == NoError)
             error("Expected '('");
         break;
     // do {statements} while(conditional)
@@ -68,7 +69,7 @@ void statement()
             statement(); // resolve statements
             if (nextToken == RIGHT_CBRACE)
                 lex(); // move on
-            else
+            else if (shadowCode == NoError)
                 error("Expected '}'");
             // following c brace, need to see a while
             if (nextToken == KEY_WHILE)
@@ -81,19 +82,19 @@ void statement()
                     if (nextToken == RIGHT_PAREN)
                         lex();
                     // missing close paren
-                    else
+                    else if (shadowCode == NoError)
                         error("Expected ')'");
                 }
                 // missing left paren
-                else
+                else if (shadowCode == NoError)
                     error("Expected '('");
             }
             // missing while(conditional)
-            else
+            else if (shadowCode == NoError)
                 error("Expected 'while(conditional)'");
         }
         // Missing left cbrace
-        else
+        else if (shadowCode == NoError)
             error("Expected '{'");
         break;
     // error last line statement entrance
@@ -108,9 +109,10 @@ void statement()
     // statement handled, check for semicolon
     if (nextToken == SEMICOLON)
     {
-        lex();       // move on to next statement
-        statement(); // move s;s -> s
-    }
+        lex();                // move on to next statement
+        shadowCode = NoError; // Reset this so that next statement can track errors again
+        statement();          // move s;s -> s
+    }                         // Last statement doesn't need to reset shadowCode
 }
 
 /**
@@ -130,7 +132,7 @@ void conditional()
         expr();
     }
     // invalid comparator operator
-    else
+    else if (shadowCode == NoError)
         error("Invalid Comparitor Operator");
 }
 
@@ -164,7 +166,7 @@ void term()
         lex();
         factor();
     }
-    if (nextToken == UNKNOWN)
+    if (nextToken == UNKNOWN && shadowCode == NoError)
         error("Invalid Operation");
 } /* End of function term */
 
@@ -183,7 +185,7 @@ void factor()
         if (nextToken == RIGHT_PAREN)
             lex();
         // missing closing paren
-        else
+        else if (shadowCode == NoError)
             error("Expected ')'");
         break;
     // V++, V--, or just V?
@@ -209,8 +211,8 @@ void factor()
  */
 static void error(std::string details)
 {
-    exit_code = SyntaxError;
-    cerr << "error detected: " << details << endl
+    exit_code = shadowCode = SyntaxError;
+    cout << "error detected: " << details << endl
          << lexeme << " was the next lexeme "
          << strNextToken << " was the next token" << endl;
 }
