@@ -205,7 +205,7 @@ void factor()
 
 /**
  * @brief Error handler routine
- *
+ * @param details: String describing the problem for call
  */
 static void error(std::string details)
 {
