@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+"""
+=============================================================================
+Title : serial.py
+Description : This will use a generator function to compute time steps of a cipher matrix to decrypt encrypted texts.
+Author : Silas Rodriguez (R#1167913)
+Date : 11/19/2023
+Version : 1.0
+Usage : [python3, py, python] -i (input_file) -s (seed) -o (output_file) -p [# of processes]
+Notes : This example script has no requirements - written in base python.
+Python Version: 3.9.12
+=============================================================================
+"""
+
 import argparse
 from decryptLetter import decryptLetter
 import re

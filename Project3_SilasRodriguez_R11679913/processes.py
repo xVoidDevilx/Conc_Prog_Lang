@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+"""
+=============================================================================
+Title : processes.py
+Description : This will spawn processes to use the a worker function scatter-gather vector calculation.
+Author : Silas Rodriguez (R#1167913)
+Date : 11/19/2023
+Version : 1.0
+Usage : [python3, py, python] -i (input_file) -s (seed) -o (output_file) -p [# of processes]
+Notes : This example script has no requirements - written in base python.
+Python Version: 3.9.12
+=============================================================================
+"""
+
 from multiprocessing import Process, Queue
 import argparse
 from decryptLetter import decryptLetter
