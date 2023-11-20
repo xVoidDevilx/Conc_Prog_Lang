@@ -16,7 +16,6 @@ from multiprocessing import Pool, Manager
 import argparse
 from decryptLetter import decryptLetter
 import re
-from time import time
 
 """
     @author: Silas Rodriguez
