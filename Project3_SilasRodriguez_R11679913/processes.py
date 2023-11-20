@@ -11,7 +11,7 @@ Notes : This example script has no requirements - written in base python.
 Python Version: 3.9.12
 =============================================================================
 """
-
+# THIS PROGRAM NEEDS TO BE UPDATED TO PROPERLY SPAWN PROCESSES
 from multiprocessing import Process, Queue
 import argparse
 from decryptLetter import decryptLetter

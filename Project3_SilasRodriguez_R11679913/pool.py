@@ -16,6 +16,7 @@ from multiprocessing import Pool, Manager
 import argparse
 from decryptLetter import decryptLetter
 import re
+from time import time
 
 """
     @author: Silas Rodriguez
@@ -85,20 +86,42 @@ def timeStepScatter(args:tuple):
         'blc':    (i + (dim-1), compass_base ['left'][1] and compass_base['bottom'][1]),
         'tlc':    (i + -(dim+1), compass_base['left'][1] and compass_base['top'][1]),
         'trc':    (i + -(dim-1), compass_base['right'][1] and compass_base['top'][1])}
-        compass = compass_base.copy()
+
+        compass = {key: value for key, value in compass_base.items()}
         compass.update(compass_corners)
+
         sum_neighbors = 0
         for key, (offset, compute) in compass.items():
             if compute:
                 sum_neighbors+=hashgrid[vector[offset]][0]
             currentStep[i-start] = hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens'])
     
-    update_query = {
+    post = {
         'start': start,
         'stop':stop,
         'vector':currentStep
     }
-    queue.put(update_query) # put data into the queue to be processed soon
+    queue.put(post) # put data into the queue to be processed soon
+
+"""
+    @author: Silas Rodriguez
+    @brief: handles processes
+    @return: final cipher matrix
+"""
+def run_matrix_processing(args: tuple):
+    vector, dim, ranges, hashGrid, process_count = args
+    with Manager() as manager:
+        q = manager.Queue()
+        with Pool(process_count) as pool:
+            for _ in range(100):
+                # Only pass the necessary information to the worker processes
+                pool.map(timeStepScatter, [(vector[:], dim, chunk, hashGrid, q) for chunk in ranges])
+                # reassemble the matrix being scattered
+                while not q.empty():
+                    result = q.get()
+                    start, stop, sliced = result['start'], result['stop'], result['vector']
+                    vector[start:stop] = sliced
+    return vector
 
 """
     @author: Silas Rodriguez
@@ -120,45 +143,17 @@ def generateChunkPairs(dim: int, process_count: int):
         chunks.append((start_index, end_index))
         start_index = end_index
 
-    return chunks
-
+    return set(chunks)
 
 """
     This needed to be defined because lambda functions cannot be pickled
 """
 def hashgrid_function_a(prime:set, even:set):
     return 'a' if prime else 'b' if even else 'c'
-
 def hashgrid_function_b(prime:set, even:set):
     return 'b' if prime else 'c' if even else 'a'
-
 def hashgrid_function_c(prime:set, even:set):
     return 'c' if prime else 'a' if even else 'b'
-
-"""
-    @author: Silas Rodriguez
-    @brief: handles processes
-    @return: final cipher matrix
-"""
-def run_matrix_processing(args:tuple):
-    vector, dim, ranges, hashGrid, process_count = args
-    with Manager() as manager:
-        q = manager.Queue()
-        pool = Pool(process_count)
-
-        # Only pass the necessary information to the worker processes
-        pool.map(timeStepScatter, [(vector[:], dim, chunk, hashGrid, q) for chunk in ranges])
-
-        pool.close()
-        pool.join()
-
-        result_vector = vector[:]
-        while not q.empty():
-            result = q.get()
-            start, stop, sliced = result['start'], result['stop'], result['vector']
-            result_vector[start:stop] = sliced
-
-    return result_vector
 
 """
     @author: Silas Rodriguez
@@ -207,12 +202,10 @@ def main(argv:argparse.Namespace, *args, **kwargs):
                     'evens': evens}
         del possibleSums; del primes; del odds; del evens
 
-        result_vector = vector[:]
-        for _ in range(100):
-            result_vector = run_matrix_processing((result_vector, dim, ranges, hashGrid, process_count))
+        vector = run_matrix_processing((vector, dim, ranges, hashGrid, process_count))
 
         # reassemble the matrix
-        matrix_re = [result_vector[i:i+dim] for i in range(0, len(result_vector), dim)]
+        matrix_re = [vector[i:i+dim] for i in range(0, len(vector), dim)]
 
         # # Phase 1.4 Decryption:
         col_sums = [sum(hashGrid[row[i]][0] for row in matrix_re) for i in range(len(matrix_re))]
@@ -244,4 +237,5 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--processes', required=False, default=1, help='how many processes to spawn to solve', type=int)
     
     argv = parser.parse_args()
+    
     main(argv)
