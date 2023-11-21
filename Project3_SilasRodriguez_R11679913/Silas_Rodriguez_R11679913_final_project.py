@@ -4,14 +4,13 @@
 Title : pool.py
 Description : This will spawn a pool of processes to use the worker function to perform vector calculations.
 Author : Silas Rodriguez (R#1167913)
-Date : 11/19/2023
+Date : 11/20/2023
 Version : 1.0
 Usage : [python3, py, python] -i (input_file) -s (seed) -o (output_file) -p [# of processes]
 Notes : This example script has no requirements - written in base python.
-Python Version: 3.9.12
+Python Version: 3.4.8 +
 =============================================================================
 """
-
 from multiprocessing import Pool, Manager
 import argparse
 from decryptLetter import decryptLetter
@@ -76,10 +75,10 @@ def timeStepScatter(args:tuple):
         # compass[key][0] = index of offset
         # compass[key][1] = bool to bother adding
         compass_base = { 
-        'right':  (i+1,i % dim != dim-1),
-        'left':   (i-1,i % dim != 0),
-        'bottom': (i+dim,i + dim < totalCells),
-        'top':    (i-dim,i - dim >= 0)}
+        'right':  (i+1, i % dim != dim-1),
+        'left':   (i-1, i % dim != 0),
+        'bottom': (i+dim, i + dim < totalCells),
+        'top':    (i-dim, i - dim >= 0)}
         compass_corners = {
         'brc':    (i + (dim+1), compass_base['right'][1] and compass_base['bottom'][1]),
         'blc':    (i + (dim-1), compass_base ['left'][1] and compass_base['bottom'][1]),
@@ -107,7 +106,7 @@ def timeStepScatter(args:tuple):
     @brief: handles processes
     @return: final cipher matrix
 """
-def run_matrix_processing(args: tuple):
+def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
     with Manager() as manager:
         q = manager.Queue()
@@ -115,7 +114,7 @@ def run_matrix_processing(args: tuple):
             for _ in range(100):
                 # Only pass the necessary information to the worker processes
                 pool.map(timeStepScatter, [(vector[:], dim, chunk, hashGrid, q) for chunk in ranges])
-                # reassemble the matrix being scattered
+                # reassemble the vector being scattered
                 while not q.empty():
                     result = q.get()
                     start, stop, sliced = result['start'], result['stop'], result['vector']
@@ -201,7 +200,7 @@ def main(argv:argparse.Namespace, *args, **kwargs):
                     'evens': evens}
         del possibleSums; del primes; del odds; del evens
 
-        vector = run_matrix_processing((vector, dim, ranges, hashGrid, process_count))
+        vector = run_vector_processing((vector, dim, ranges, hashGrid, process_count))
 
         # reassemble the matrix
         matrix_re = [vector[i:i+dim] for i in range(0, len(vector), dim)]
@@ -226,14 +225,14 @@ if __name__ == '__main__':
     print('Project :: R11679913')
 
     parser = argparse.ArgumentParser(
-        prog='main.py',
+        prog='Silas_Rodriguez_R11679913_final_project.py',
         description='Large Matrix Math',
         epilog='Silas Rodriguez, R11679913, TTU Computer Engineer, 2023'
                                      )
     parser.add_argument('-i', '--input',  required=True, help='input file containing encrypted string', type=str)
     parser.add_argument('-o', '--output', required=True, help='output file path to an existing directory', type=str)
     parser.add_argument('-s', '--seed',   required=True, help='retrieves a string that sets seed when starting matrix', type=str)
-    parser.add_argument('-p', '--processes', required=False, default=1, help='how many processes to spawn to solve', type=int)
+    parser.add_argument('-p', '--processes', required=False, default=1, help='how many processes to spawn', type=int)
     
     argv = parser.parse_args()
     
