@@ -11,7 +11,7 @@ Notes : This example script has no requirements - written in base python.
 Python Version: 3.4.8 +
 =============================================================================
 """
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool
 import argparse
 from decryptLetter import decryptLetter
 import re
@@ -46,9 +46,7 @@ def generateMatrix(n: int, seed: str):
     @param: matrix - nxn matrix to be flattened
 """
 def flattenMatrix(matrix: [[]]):
-    flattened_vector = []
-    for row in matrix:
-        flattened_vector.extend(row)
+    flattened_vector = [char for row in matrix for char in row]
     return flattened_vector
 
 """
@@ -60,7 +58,7 @@ def flattenMatrix(matrix: [[]]):
     @param: chunk: value range the process will compute over
 """
 def timeStepScatter(args:tuple):
-    vector, dim, chunk, hashgrid, queue = args  # unpack the arguments
+    vector, dim, chunk, hashgrid = args  # unpack the arguments
     start, stop = chunk # unpack the range
     totalCells = len(vector)    # get the total elements
     currentStep = vector[start:stop]    # create a copy
@@ -84,23 +82,21 @@ def timeStepScatter(args:tuple):
         'blc':    (i + (dim-1), compass_base ['left'][1] and compass_base['bottom'][1]),
         'tlc':    (i + -(dim+1), compass_base['left'][1] and compass_base['top'][1]),
         'trc':    (i + -(dim-1), compass_base['right'][1] and compass_base['top'][1])}
-
-        compass = {key: value for key, value in compass_base.items()}
-        compass.update(compass_corners)
+        compass_base.update(compass_corners)
 
         sum_neighbors = 0
-        for key, (offset, compute) in compass.items():
+        for key, (offset, compute) in compass_base.items():
             if compute:
                 sum_neighbors+=hashgrid[vector[offset]][0]
-            currentStep[i-start] = hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens'])
+            currentStep[i-start] = hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'],
+                                                           sum_neighbors in hashgrid['evens'])
     
     post = {
         'start': start,
         'stop':stop,
         'vector':currentStep
     }
-    queue.put(post) # put data into the queue to be processed soon
-
+    return post
 """
     @author: Silas Rodriguez
     @brief: handles processes
@@ -108,17 +104,14 @@ def timeStepScatter(args:tuple):
 """
 def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
-    with Manager() as manager:
-        q = manager.Queue()
-        with Pool(process_count) as pool:
-            for _ in range(100):
-                # Only pass the necessary information to the worker processes
-                pool.map(timeStepScatter, [(vector[:], dim, chunk, hashGrid, q) for chunk in ranges])
-                # reassemble the vector being scattered
-                while not q.empty():
-                    result = q.get()
-                    start, stop, sliced = result['start'], result['stop'], result['vector']
-                    vector[start:stop] = sliced
+    with Pool(process_count) as pool:
+        for _ in range(100):
+            # Only pass the necessary information to the worker processes
+            results = pool.imap(timeStepScatter, [(vector[:], dim, chunk, hashGrid) for chunk in ranges])
+            # reassemble the vector being scattered
+            for result in results:
+                start, stop, sliced = result['start'], result['stop'], result['vector']
+                vector[start:stop] = sliced
     return vector
 
 """

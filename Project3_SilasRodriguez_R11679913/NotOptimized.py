@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """
 =============================================================================
-Title : processes.py
-Description : This will spawn processes to use the a worker function scatter-gather vector calculation.
+Title : pool.py
+Description : This will spawn a pool of processes to use the worker function to perform vector calculations.
 Author : Silas Rodriguez (R#1167913)
-Date : 11/19/2023
+Date : 11/20/2023
 Version : 1.0
 Usage : [python3, py, python] -i (input_file) -s (seed) -o (output_file) -p [# of processes]
 Notes : This example script has no requirements - written in base python.
-Python Version: 3.9.12
+Python Version: 3.4.8 +
 =============================================================================
 """
-# THIS PROGRAM NEEDS TO BE UPDATED TO PROPERLY SPAWN PROCESSES
-from multiprocessing import Process, Queue
+from multiprocessing import Pool, Manager
 import argparse
 from decryptLetter import decryptLetter
 import re
@@ -47,9 +46,7 @@ def generateMatrix(n: int, seed: str):
     @param: matrix - nxn matrix to be flattened
 """
 def flattenMatrix(matrix: [[]]):
-    flattened_vector = []
-    for row in matrix:
-        flattened_vector.extend(row)
+    flattened_vector = [char for row in matrix for char in row]
     return flattened_vector
 
 """
@@ -60,12 +57,11 @@ def flattenMatrix(matrix: [[]]):
     @param: hashgrid - dictionary mapping of seed: (value , function pairs)
     @param: chunk: value range the process will compute over
 """
-def timeStepScatter(vector:list, dim:int, chunk:tuple, hashgrid:dict, queue:Queue):
-    # Phase 1.3: Matrix Processing
-    assert len(chunk) == 2, 'Chunk (start, stop) length violated'
-    start, stop = chunk         # unpack the chunk to do the math over
-    totalCells = len(vector)    # how many cells there are to compute over
-    currentStep = vector[start:stop]     # creating a copy of the current vector that will become output
+def timeStepScatter(args:tuple):
+    vector, dim, chunk, hashgrid, queue = args  # unpack the arguments
+    start, stop = chunk # unpack the range
+    totalCells = len(vector)    # get the total elements
+    currentStep = vector[start:stop]    # create a copy
 
     """
         This needs explaining:
@@ -77,29 +73,51 @@ def timeStepScatter(vector:list, dim:int, chunk:tuple, hashgrid:dict, queue:Queu
         # compass[key][0] = index of offset
         # compass[key][1] = bool to bother adding
         compass_base = { 
-        'right':  (i+1,i % dim != dim-1),
-        'left':   (i-1,i % dim != 0),
-        'bottom': (i+dim,i + dim < totalCells),
-        'top':    (i-dim,i - dim >= 0)}
+        'right':  (i+1, i % dim != dim-1),
+        'left':   (i-1, i % dim != 0),
+        'bottom': (i+dim, i + dim < totalCells),
+        'top':    (i-dim, i - dim >= 0)}
         compass_corners = {
         'brc':    (i + (dim+1), compass_base['right'][1] and compass_base['bottom'][1]),
         'blc':    (i + (dim-1), compass_base ['left'][1] and compass_base['bottom'][1]),
         'tlc':    (i + -(dim+1), compass_base['left'][1] and compass_base['top'][1]),
         'trc':    (i + -(dim-1), compass_base['right'][1] and compass_base['top'][1])}
-        compass = compass_base.copy()
-        compass.update(compass_corners)
+        compass_base.update(compass_corners)
+
         sum_neighbors = 0
-        for key, (offset, compute) in compass.items():
+        for key, (offset, compute) in compass_base.items():
             if compute:
                 sum_neighbors+=hashgrid[vector[offset]][0]
-            currentStep[i-start] = hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens'])
+            currentStep[i-start] = hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'],
+                                                           sum_neighbors in hashgrid['evens'])
     
-    update_query = {
+    post = {
         'start': start,
         'stop':stop,
         'vector':currentStep
     }
-    queue.put(update_query) # put data into the queue to be processed soon
+    queue.put(post) # put data into the queue to be processed soon
+
+"""
+    @author: Silas Rodriguez
+    @brief: handles processes
+    @return: final cipher matrix
+"""
+def run_vector_processing(args: tuple):
+    vector, dim, ranges, hashGrid, process_count = args
+    with Manager() as manager:
+        q = manager.Queue()
+        with Pool(process_count) as pool:
+            for _ in range(100):
+                # Only pass the necessary information to the worker processes
+                pool.map(timeStepScatter, [(vector[:], dim, chunk, hashGrid, q) for chunk in ranges], chunksize=process_count)
+                # reassemble the vector being scattered
+                while not q.empty():
+                    result = q.get()
+                    start, stop, sliced = result['start'], result['stop'], result['vector']
+                    vector[start:stop] = sliced
+    return vector
+
 """
     @author: Silas Rodriguez
     @brief: computes the chunks for each process
@@ -120,44 +138,22 @@ def generateChunkPairs(dim: int, process_count: int):
         chunks.append((start_index, end_index))
         start_index = end_index
 
-    return chunks
-
+    return set(chunks)
 
 """
     This needed to be defined because lambda functions cannot be pickled
 """
-def hashgrid_function_a(prime, even):
+def hashgrid_function_a(prime:set, even:set):
     return 'a' if prime else 'b' if even else 'c'
-
-def hashgrid_function_b(prime, even):
+def hashgrid_function_b(prime:set, even:set):
     return 'b' if prime else 'c' if even else 'a'
-
-def hashgrid_function_c(prime, even):
+def hashgrid_function_c(prime:set, even:set):
     return 'c' if prime else 'a' if even else 'b'
-
-def run_matrix_processing(vector, dim, ranges, hashGrid, q, process_count):
-    processes = []
-    for procID in range(process_count):
-        arguments = (vector, dim, ranges[procID], hashGrid, q)
-        p = Process(target=timeStepScatter, args=arguments)
-        processes.append(p)
-
-    result_vector = vector[:]
-    for proc in processes:
-        proc.start()
-
-    for proc in processes:
-        proc.join()
-        while not q.empty():
-            qdict = q.get()
-            start, stop, sliced = qdict['start'], qdict['stop'], qdict['vector']
-            result_vector[start:stop] = sliced
-
-    return result_vector
 
 """
     @author: Silas Rodriguez
     @brief: Pulls all the files, organizes data, writes to the screen
+    @return: file to output with cipher decrypted
     @param: argv - argument vector from argparse. Used for parameters that control the program
 """
 def main(argv:argparse.Namespace, *args, **kwargs):
@@ -201,15 +197,11 @@ def main(argv:argparse.Namespace, *args, **kwargs):
                     'evens': evens}
         del possibleSums; del primes; del odds; del evens
 
-        q = Queue() # create a new queue for message passing
-        result_vector = vector[:]
-        for _ in range(100):
-            result_vector = run_matrix_processing(result_vector, dim, ranges, hashGrid, q, process_count)
+        vector = run_vector_processing((vector, dim, ranges, hashGrid, process_count))
 
         # reassemble the matrix
-        matrix_re = [result_vector[i:i+dim] for i in range(0, len(result_vector), dim)]
-        for row in matrix_re:
-            print(row)                    
+        matrix_re = [vector[i:i+dim] for i in range(0, len(vector), dim)]
+
         # # Phase 1.4 Decryption:
         col_sums = [sum(hashGrid[row[i]][0] for row in matrix_re) for i in range(len(matrix_re))]
         decryptedString = ''
@@ -219,20 +211,26 @@ def main(argv:argparse.Namespace, *args, **kwargs):
         # Write to Output File:
         with open(argv.output, 'w') as outFile:
             outFile.write(decryptedString)
-        
+
+"""
+    @author: Silas Rodriguez
+    @brief: starts the program smoothly with processes in mind
+    @return: None
+"""
 if __name__ == '__main__':
     # Phase 1.1: Data Retrieval
     print('Project :: R11679913')
 
     parser = argparse.ArgumentParser(
-        prog='main.py',
+        prog='Silas_Rodriguez_R11679913_final_project.py',
         description='Large Matrix Math',
         epilog='Silas Rodriguez, R11679913, TTU Computer Engineer, 2023'
                                      )
     parser.add_argument('-i', '--input',  required=True, help='input file containing encrypted string', type=str)
     parser.add_argument('-o', '--output', required=True, help='output file path to an existing directory', type=str)
     parser.add_argument('-s', '--seed',   required=True, help='retrieves a string that sets seed when starting matrix', type=str)
-    parser.add_argument('-p', '--processes', required=False, default=1, help='how many processes to spawn to solve', type=int)
+    parser.add_argument('-p', '--processes', required=False, default=1, help='how many processes to spawn', type=int)
     
     argv = parser.parse_args()
+    
     main(argv)
