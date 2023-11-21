@@ -38,10 +38,12 @@ Note:
     the function behavior is not defined. Ensure that `rotationValue` is an
     integer, as other types for rotationValue will result in TypeError.
 '''
-def decryptLetter(letter:str, rotationValue:int):
-    rotationString  = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ "  # cannot change this or I fundamentally change the rotation output
-    # create a one time lookup dictionary
-    hashMap = {char: i for i, char in enumerate(rotationString)}
-    currentPosition = hashMap[letter]
+def decryptLetter(letters, rotationValues):
+    rotationString  = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ "
     
-    return rotationString[(currentPosition + rotationValue) % 95]
+    # Create a dictionary for constant-time lookup
+    char_index_map = {char: index for index, char in enumerate(rotationString)}
+
+    for letter, rotationValue in zip(letters, rotationValues):
+        currentPosition = char_index_map[letter]
+        yield rotationString[(currentPosition + rotationValue) % 95]

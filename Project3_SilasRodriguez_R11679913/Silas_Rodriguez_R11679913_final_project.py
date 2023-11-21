@@ -34,18 +34,10 @@ def justifySeed(seed:str):
     @param: n - integer, size of encrpyted string to be decrypted
     @param: seed - string to be regex compared
 """
-def generateMatrix(n: int, seed: str):
-    #Phase 1.2 : Generate the matrix
-    matrix = [[seed[char % len(seed)] for char in range(row, row + n)] for row in range(0, n * n, n)]   # loop comprehension is very fast
-    return matrix
-
-"""
-    @author: Silas Rodriguez
-    @brief: flatten the matrix into a vector
-    @return: n**2 len vector
-    @param: matrix - nxn matrix to be flattened
-"""
-def flattenMatrix(matrix: [[]]):
+def generateVector(n: int, seed: str):
+    # Generate the vector directly
+    vector = [seed[char % len(seed)] for char in range(n * n)]
+    return vector
     flattened_vector = [char for row in matrix for char in row]
     return flattened_vector
 
@@ -62,7 +54,8 @@ def timeStepScatter(args:tuple):
     start, stop = chunk # unpack the range
     totalCells = len(vector)    # get the total elements
     currentStep = vector[start:stop]    # create a copy
-
+    dim_p1 = dim+1
+    dim_m1 = dim-1
     """
         This needs explaining:
         right, left, bottom, top, bottom-right corner, top-left corner, top-right corner, and bottom-left corner neighbors.
@@ -78,10 +71,10 @@ def timeStepScatter(args:tuple):
         'bottom': (i+dim, i + dim < totalCells),
         'top':    (i-dim, i - dim >= 0)}
         compass_corners = {
-        'brc':    (i + (dim+1), compass_base['right'][1] and compass_base['bottom'][1]),
-        'blc':    (i + (dim-1), compass_base ['left'][1] and compass_base['bottom'][1]),
-        'tlc':    (i + -(dim+1), compass_base['left'][1] and compass_base['top'][1]),
-        'trc':    (i + -(dim-1), compass_base['right'][1] and compass_base['top'][1])}
+        'brc':    (i + (dim_p1), compass_base['right'][1] and compass_base['bottom'][1]),
+        'blc':    (i + (dim_m1), compass_base ['left'][1] and compass_base['bottom'][1]),
+        'tlc':    (i + -(dim_p1), compass_base['left'][1] and compass_base['top'][1]),
+        'trc':    (i + -(dim_m1), compass_base['right'][1] and compass_base['top'][1])}
         compass_base.update(compass_corners)
 
         sum_neighbors = 0
@@ -97,6 +90,7 @@ def timeStepScatter(args:tuple):
         'vector':currentStep
     }
     return post
+
 """
     @author: Silas Rodriguez
     @brief: handles processes
@@ -105,9 +99,10 @@ def timeStepScatter(args:tuple):
 def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
     with Pool(process_count) as pool:
-        for _ in range(100):
-            # Only pass the necessary information to the worker processes
-            results = pool.imap(timeStepScatter, [(vector[:], dim, chunk, hashGrid) for chunk in ranges])
+        for i in range(100):
+            print(f'Timestep {i+1} started!')
+            # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
+            results = pool.imap_unordered(timeStepScatter, [([*vector], dim, chunk, hashGrid) for chunk in ranges])
             # reassemble the vector being scattered
             for result in results:
                 start, stop, sliced = result['start'], result['stop'], result['vector']
@@ -171,16 +166,14 @@ def main(argv:argparse.Namespace, *args, **kwargs):
 
         # Phase 1.2 - Matrix Generation
         dim = len(encrytped_str)
-        matrix = generateMatrix(dim, seed)        
-
-        # Phase 1.3: Matrix Processing
         if not argv.processes > 0:
             raise ValueError('processes must be greater than 0')
         process_count = argv.processes
         
         ranges = generateChunkPairs(dim=dim, process_count=process_count)
-        vector = flattenMatrix(matrix)
+        vector = generateVector(dim, seed)
 
+        # Phase 1.3: Matrix Processing
         possibleSums = {num for num in range(17)}   # 16 is the max of 8 c neighbors * 2 = 16.
         primes = {2, 3, 5, 7, 11, 13}
         odds = {num for num in possibleSums if num % 2 == 1 and num not in primes}
@@ -201,8 +194,8 @@ def main(argv:argparse.Namespace, *args, **kwargs):
         # # Phase 1.4 Decryption:
         col_sums = [sum(hashGrid[row[i]][0] for row in matrix_re) for i in range(len(matrix_re))]
         decryptedString = ''
-        for i, col_sum in enumerate(col_sums):
-            decryptedString += decryptLetter(encrytped_str[i], col_sum) # String concatenation
+        for letter in decryptLetter(encrytped_str, col_sums):
+            decryptedString += letter
 
         # Write to Output File:
         with open(argv.output, 'w') as outFile:
