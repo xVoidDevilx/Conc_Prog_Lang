@@ -15,7 +15,6 @@ from multiprocessing import Pool
 import argparse
 from decryptLetter import decryptLetter
 import re
-
 """
     @author: Silas Rodriguez
     @brief: uses regex to justify valid seeds
@@ -106,6 +105,8 @@ def run_vector_processing(args: tuple):
             for result in results:
                 start, stop, sliced = result['start'], result['stop'], result['vector']
                 vector[start:stop] = sliced
+            #print(f'Itteration {i+1} complete!')
+
     return vector
 
 """
@@ -149,12 +150,11 @@ def hashgrid_function_c(prime:set, even:set):
 def main(argv:argparse.Namespace, *args, **kwargs):
 
     # Phase 1.1: Data Retrieval
-    with open(argv.input, 'r') as inputFile:
+    with open(argv.input, 'rb') as inputFile:
         encrytped_str = inputFile.read()
-    
     # try to open a file, otherwise, just set the string, then execute the matrix operations
     try:
-        with open(argv.seed, 'r') as inputFile:
+        with open(argv.seed, 'rb') as inputFile:
             seed = inputFile.read()
     except FileNotFoundError:
         seed = argv.seed
@@ -171,7 +171,6 @@ def main(argv:argparse.Namespace, *args, **kwargs):
         
         ranges = generateChunkPairs(dim=dim, process_count=process_count)
         vector = generateVector(dim, seed)
-
         # Phase 1.3: Matrix Processing
         possibleSums = {num for num in range(17)}   # 16 is the max of 8 c neighbors * 2 = 16.
         primes = {2, 3, 5, 7, 11, 13}
@@ -193,7 +192,7 @@ def main(argv:argparse.Namespace, *args, **kwargs):
         # # Phase 1.4 Decryption:
         col_sums = [sum(hashGrid[row[i]][0] for row in matrix_re) for i in range(len(matrix_re))]
         decryptedString = ''
-        for letter in decryptLetter(encrytped_str, col_sums):
+        for letter in decryptLetter(encrytped_str.decode(), col_sums):
             decryptedString += letter
 
         # Write to Output File:
