@@ -100,7 +100,6 @@ def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
     with Pool(process_count) as pool:
         for i in range(100):
-            print(f'Timestep {i+1} started!')
             # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
             results = pool.imap_unordered(timeStepScatter, [([*vector], dim, chunk, hashGrid) for chunk in ranges])
             # reassemble the vector being scattered
