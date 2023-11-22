@@ -15,7 +15,6 @@ from multiprocessing import Pool
 import argparse
 from decryptLetter import decryptLetter
 import re
-import time
 """
     @author: Silas Rodriguez
     @brief: uses regex to justify valid seeds
@@ -47,8 +46,7 @@ def generateVector(n: int, seed: str):
     @brief: computes a timestep of the matrix
     @return: None
     @param:
-        - vector_r (list): The input vector.
-        - vector_w (list): The output vector to be updated.
+        - vector (list): The input vector.
         - dim (int): The dimension of the square array.
         - chunk (tuple): The range of indices to process.
         - hashgrid (dict): A dictionary representing the hashgrid for vector processing.
@@ -84,8 +82,13 @@ def timeStepScatter(args:tuple):
         compass_base.update(compass_corners)
 
         # compute the sum of the neighbors + write to the output vector
-        sum_neighbors = sum(hashgrid[vector[offset]][0] for key, (offset, compute) in compass_base.items() if compute)
+        sum_neighbors = 0
+        for offset, compute in compass_base.values():
+            if compute:
+                sum_neighbors += hashgrid[vector[offset]][0]
+        # append to the changes to be made
         changes.append(hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens']))
+
     # return a tuple for chunk edited, and changes to be cast
     return (start, stop, changes)
 
@@ -98,9 +101,8 @@ def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
     with Pool(process_count) as pool:
         for _ in range(100):
-            print(f'Starting itteration {1 + _}')
             # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
-            results = tuple(pool.imap(timeStepScatter, [(vector, dim, chunk, hashGrid) for chunk in ranges]))    # Trick I learned: tuple (imap) forces the computations instead of being lazy
+            results = tuple(pool.imap_unordered(timeStepScatter, [(vector, dim, chunk, hashGrid) for chunk in ranges]))    # Trick I learned: tuple (imap) forces the computations instead of being lazy
 
             for result in results:
                 start, stop, changes = result
