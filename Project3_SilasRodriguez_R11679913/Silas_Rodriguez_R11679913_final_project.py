@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
 =============================================================================
-Title : pool.py
-Description : This will spawn a pool of processes to use the worker function to perform vector calculations.
+Title : Silas_Rodriguez_R11679913_final_project.py
+Description : This script utilizes multiprocessing to perform vector calculations on a large matrix, decrypting an encrypted string.
 Author : Silas Rodriguez (R#1167913)
-Date : 11/20/2023
+Date : 11/22/2023
 Version : 1.0
-Usage : [python3, py, python] -i (input_file) -s (seed) -o (output_file) -p [# of processes]
+Usage : python Silas_Rodriguez_R11679913_final_project.py -i INPUT_FILE -s SEED -o OUTPUT_FILE -p NUM_PROCESSES
 Notes : This example script has no requirements - written in base python.
 Python Version: 3.9.12 +
 =============================================================================
 """
-from multiprocessing import Pool
+from multiprocessing import Pool, Manager
 import argparse
 from decryptLetter import decryptLetter
 import re
@@ -29,10 +29,11 @@ def justifySeed(seed:str):
 
 """
     @author: Silas Rodriguez
-    @brief: one time function to generate a nxn matrix using the input seed as a repeater
-    @return: nxn matrix with repeated seed
-    @param: n - integer, size of encrpyted string to be decrypted
-    @param: seed - string to be regex compared
+    @brief: one time function to generate a n^2 vector using the input seed as a repeater
+    @return: n^2 vector with repeated seed
+    @param: 
+        -n (integer): size of encrpyted string to be decrypted
+        -seed (str) : string to be regex validated
 """
 def generateVector(n: int, seed: str):
     # Generate the vector directly
@@ -44,16 +45,19 @@ def generateVector(n: int, seed: str):
 """
     @author: Silas Rodriguez
     @brief: computes a timestep of the matrix
-    @return: generator object, itterate to get the timesteps
-    @param: matrix - nxn matrix to compute time steps for in this cipher. Is overwritten
-    @param: hashgrid - dictionary mapping of seed: (value , function pairs)
-    @param: chunk: value range the process will compute over
+    @return: None
+    @param:
+        - vector_r (list): The input vector.
+        - vector_w (list): The output vector to be updated.
+        - dim (int): The dimension of the square array.
+        - chunk (tuple): The range of indices to process.
+        - hashgrid (dict): A dictionary representing the hashgrid for vector processing.
+    @post: vector_w is updated with the chunk section assigned to process
 """
-def timeStepScatter(args:tuple):
-    vector, dim, chunk, hashgrid = args  # unpack the arguments
+def timeStepScatter(vector_r:list, vector_w:list, dim:int, chunk:tuple, hashgrid:dict):
     start, stop = chunk # unpack the range
-    totalCells = len(vector)    # get the total elements
-    currentStep = vector[start:stop]    # create a copy
+    totalCells = len(vector_r)    # get the total elements
+
     dim_p1 = dim+1
     dim_m1 = dim-1
     """
@@ -77,19 +81,10 @@ def timeStepScatter(args:tuple):
         'trc':    (i + -(dim_m1), compass_base['right'][1] and compass_base['top'][1])}
         compass_base.update(compass_corners)
 
-        sum_neighbors = 0
-        for key, (offset, compute) in compass_base.items():
-            if compute:
-                sum_neighbors+=hashgrid[vector[offset]][0]
-            currentStep[i-start] = hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'],
-                                                           sum_neighbors in hashgrid['evens'])
-    
-    post = {
-        'start': start,
-        'stop':stop,
-        'vector':currentStep
-    }
-    return post
+        # compute the sum of the neighbors + write to the output vector
+        sum_neighbors = sum(hashgrid[vector_r[offset]][0] for key, (offset, compute) in compass_base.items() if compute)
+        vector_w[i] = hashgrid[vector_r[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens'])
+
 
 """
     @author: Silas Rodriguez
@@ -99,22 +94,25 @@ def timeStepScatter(args:tuple):
 def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
     with Pool(process_count) as pool:
-        for i in range(100):
-            clean_copy = [*vector]
-            # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
-            results = pool.imap_unordered(timeStepScatter, [(clean_copy, dim, chunk, hashGrid) for chunk in ranges])
-            # reassemble the vector being scattered
-            for result in results:
-                start, stop, sliced = result['start'], result['stop'], result['vector']
-                vector[start:stop] = sliced
-    return vector
+        # create a rw shared vector pair
+        with Manager() as manager:    
+            vector_r = manager.list(vector)
+            vector_w = manager.list(vector)
+            del vector
+            for i in range(100):
+                # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
+                pool.starmap(timeStepScatter, [(vector_r, vector_w, dim, chunk, hashGrid) for chunk in ranges])
+                
+                vector_r, vector_w = vector_w, vector_r # swap the two shared memory spaces
+            vector_r = tuple(vector_r) # do this before exiting manager
+    return vector_r
 
 """
-    @author: Silas Rodriguez
     @brief: computes the chunks for each process
-    @return: ranges for each process to itterate over (startRow, startCol, stopRow, StopCol)
-    @param: dim - the dimension of the square array
-    @param: process_count: amount of processes that the program will run
+    @return: set of tuples for each process to itterate over {(start, stop)}
+    @param: 
+        - dim (int): the dimension of the square array
+        - process_count (int): amount of processes that the program will run
 """
 def generateChunkPairs(dim: int, process_count: int):
     assert process_count <= dim**2, 'More Processes than work to do...'
@@ -142,18 +140,15 @@ def hashgrid_function_c(prime:set, even:set):
     return 'c' if prime else 'a' if even else 'b'
 
 """
-    @author: Silas Rodriguez
     @brief: Pulls all the files, organizes data, writes to the screen
-    @return: file to output with cipher decrypted
+    @post: file to output with cipher decrypted
     @param: argv - argument vector from argparse. Used for parameters that control the program
 """
 def main(argv: argparse.Namespace, *args, **kwargs):
 
     # Phase 1.1: Data Retrieval
-    with open(argv.input, 'rb') as inputFile:
-        content = inputFile.read().strip()  # cleans whitespace trailing and leading
-        # Remove non-ASCII characters from the beginning and end of the content
-        encrypted_str = re.sub(b'^[^\x00-\x7F]+|[^\x00-\x7F]+$', b'', content).decode('ascii', 'ignore')
+    with open(argv.input, encoding='ascii') as inputFile:
+        encrypted_str = inputFile.read().strip()  # cleans whitespace trailing and leading
 
     # try to open a file, otherwise, just set the string, then execute the matrix operations
     try:
@@ -207,8 +202,7 @@ def main(argv: argparse.Namespace, *args, **kwargs):
             outFile.write(decrypted_string)
 
 """
-    @author: Silas Rodriguez
-    @brief: starts the program smoothly with processes in mind
+    @brief: starts the program with processes in mind
     @return: None
 """
 if __name__ == '__main__':
@@ -217,7 +211,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
         prog='Silas_Rodriguez_R11679913_final_project.py',
-        description='Large Matrix Math',
+        description='Vector Decrypter Tool',
         epilog='Silas Rodriguez, R11679913, TTU Computer Engineer, 2023'
                                      )
     parser.add_argument('-i', '--input',  required=True, help='input file containing encrypted string', type=str)
