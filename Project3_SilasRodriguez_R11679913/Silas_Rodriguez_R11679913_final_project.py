@@ -150,12 +150,10 @@ def hashgrid_function_c(prime:set, even:set):
 def main(argv: argparse.Namespace, *args, **kwargs):
 
     # Phase 1.1: Data Retrieval
-    # Phase 1.1: Data Retrieval
     with open(argv.input, 'rb') as inputFile:
         content = inputFile.read().strip()  # cleans whitespace trailing and leading
         # Remove non-ASCII characters from the beginning and end of the content
         encrypted_str = re.sub(b'^[^\x00-\x7F]+|[^\x00-\x7F]+$', b'', content).decode('ascii', 'ignore')
-
 
     # try to open a file, otherwise, just set the string, then execute the matrix operations
     try:
