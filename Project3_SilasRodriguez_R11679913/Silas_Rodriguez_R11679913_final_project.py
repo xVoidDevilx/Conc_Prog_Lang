@@ -11,7 +11,7 @@ Notes : This example script has no requirements - written in base python.
 Python Version: 3.9.12 +
 =============================================================================
 """
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool
 import argparse
 from decryptLetter import decryptLetter
 import re
@@ -55,9 +55,9 @@ def generateVector(n: int, seed: str):
     @post: vector_w is updated with the chunk section assigned to process
 """
 def timeStepScatter(args:tuple):
-    vector_r, vector_w, dim, chunk, hashgrid= args
+    vector, dim, chunk, hashgrid= args
     start, stop = chunk # unpack the range
-    totalCells = len(vector_r)    # get the total elements
+    totalCells = len(vector)    # get the total elements
 
     dim_p1 = dim+1
     dim_m1 = dim-1
@@ -67,6 +67,7 @@ def timeStepScatter(args:tuple):
         Pre computing these 8 values based on the properties of a square matrix, one can QUICKLY access the possible neighbors of the 3 (corner), 5 (edge), or 8 (center) neighbors
         any one cell can have by setting booleans when checking in order ... buckle up bukaroo
     """
+    changes = []
     for i in range(start, stop):
         # compass[key][0] = index of offset
         # compass[key][1] = bool to bother adding
@@ -83,9 +84,10 @@ def timeStepScatter(args:tuple):
         compass_base.update(compass_corners)
 
         # compute the sum of the neighbors + write to the output vector
-        sum_neighbors = sum(hashgrid[vector_r[offset]][0] for key, (offset, compute) in compass_base.items() if compute)
-        vector_w[i] = hashgrid[vector_r[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens'])
-
+        sum_neighbors = sum(hashgrid[vector[offset]][0] for key, (offset, compute) in compass_base.items() if compute)
+        changes.append(hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens']))
+    # return a tuple for chunk edited, and changes to be cast
+    return (start, stop, changes)
 
 """
     @author: Silas Rodriguez
@@ -95,22 +97,15 @@ def timeStepScatter(args:tuple):
 def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
     with Pool(process_count) as pool:
-        # create a rw shared vector pair
-        with Manager() as manager:    
-            vector_r = manager.list(vector)
-            vector_w = manager.list(vector)
-            del vector
-            for _ in range(100):
-                print(f'Starting itteration {1 + _}')
-                # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
-                start = time.time()
-                pool.imap(timeStepScatter, [(vector_r, vector_w, dim, chunk, hashGrid) for chunk in ranges])
-                print(f'Compute time: {time.time() - start}')
-                start = time.time()
-                vector_r, vector_w = vector_w, vector_r # swap the two shared memory spaces
-                print(f'Time to swap: {time.time() - start}')
-            vector_r = tuple(vector_r) # do this before exiting manager
-    return vector_r
+        for _ in range(100):
+            print(f'Starting itteration {1 + _}')
+            # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
+            results = tuple(pool.imap(timeStepScatter, [(vector, dim, chunk, hashGrid) for chunk in ranges]))    # Trick I learned: tuple (imap) forces the computations instead of being lazy
+
+            for result in results:
+                start, stop, changes = result
+                vector[start:stop] = changes
+    return tuple(vector)
 
 """
     @brief: computes the chunks for each process
