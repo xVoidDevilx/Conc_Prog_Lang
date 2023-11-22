@@ -8,13 +8,14 @@ Date : 11/20/2023
 Version : 1.0
 Usage : [python3, py, python] -i (input_file) -s (seed) -o (output_file) -p [# of processes]
 Notes : This example script has no requirements - written in base python.
-Python Version: 3.4.8 +
+Python Version: 3.9.12 +
 =============================================================================
 """
 from multiprocessing import Pool
 import argparse
 from decryptLetter import decryptLetter
 import re
+
 """
     @author: Silas Rodriguez
     @brief: uses regex to justify valid seeds
@@ -99,14 +100,13 @@ def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
     with Pool(process_count) as pool:
         for i in range(100):
+            clean_copy = [*vector]
             # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
-            results = pool.imap_unordered(timeStepScatter, [([*vector], dim, chunk, hashGrid) for chunk in ranges])
+            results = pool.imap_unordered(timeStepScatter, [(clean_copy, dim, chunk, hashGrid) for chunk in ranges])
             # reassemble the vector being scattered
             for result in results:
                 start, stop, sliced = result['start'], result['stop'], result['vector']
                 vector[start:stop] = sliced
-            #print(f'Itteration {i+1} complete!')
-
     return vector
 
 """
@@ -147,57 +147,66 @@ def hashgrid_function_c(prime:set, even:set):
     @return: file to output with cipher decrypted
     @param: argv - argument vector from argparse. Used for parameters that control the program
 """
-def main(argv:argparse.Namespace, *args, **kwargs):
+def main(argv: argparse.Namespace, *args, **kwargs):
 
     # Phase 1.1: Data Retrieval
+    # Phase 1.1: Data Retrieval
     with open(argv.input, 'rb') as inputFile:
-        encrytped_str = inputFile.read()
+        content = inputFile.read().strip()  # cleans whitespace trailing and leading
+        # Remove non-ASCII characters from the beginning and end of the content
+        encrypted_str = re.sub(b'^[^\x00-\x7F]+|[^\x00-\x7F]+$', b'', content).decode('ascii', 'ignore')
+
+
     # try to open a file, otherwise, just set the string, then execute the matrix operations
     try:
-        with open(argv.seed, 'rb') as inputFile:
-            seed = inputFile.read()
+        with open(argv.seed, 'r', encoding='ascii') as seedFile:
+            seed = seedFile.read().strip()
     except FileNotFoundError:
         seed = argv.seed
     finally:
-        seed = seed.strip()     # do not lower case the seed, a!=A
+        seed = seed.strip()
         if not justifySeed(seed) or not len(seed) >= 1:
-            raise ValueError('Seed can only contain [abc]+ !')
+            raise ValueError('Seed can only contain [abc]+!')
 
         # Phase 1.2 - Matrix Generation
-        dim = len(encrytped_str)
+        dim = len(encrypted_str)
         if not argv.processes > 0:
-            raise ValueError('processes must be greater than 0')
+            raise ValueError('Processes must be greater than 0')
         process_count = argv.processes
-        
+
         ranges = generateChunkPairs(dim=dim, process_count=process_count)
         vector = generateVector(dim, seed)
+
         # Phase 1.3: Matrix Processing
-        possibleSums = {num for num in range(17)}   # 16 is the max of 8 c neighbors * 2 = 16.
+        possible_sums = {num for num in range(17)}   # 16 is the max of 8 c neighbors * 2 = 16.
         primes = {2, 3, 5, 7, 11, 13}
-        odds = {num for num in possibleSums if num % 2 == 1 and num not in primes}
-        evens = possibleSums ^ primes ^ odds
+        odds = {num for num in possible_sums if num % 2 == 1 and num not in primes}
+        evens = possible_sums ^ primes ^ odds
         # generate a hashgrid to make processing matrix way easier
         hashGrid = {'a': (0, hashgrid_function_a),
                     'b': (1, hashgrid_function_b),
                     'c': (2, hashgrid_function_c),
                     'primes': primes,
                     'evens': evens}
-        del possibleSums; del primes; del odds; del evens
+        del possible_sums
+        del primes
+        del odds
+        del evens
 
         vector = run_vector_processing((vector, dim, ranges, hashGrid, process_count))
 
         # reassemble the matrix
-        matrix_re = [vector[i:i+dim] for i in range(0, len(vector), dim)]
+        matrix_re = [vector[i:i + dim] for i in range(0, len(vector), dim)]
 
         # # Phase 1.4 Decryption:
         col_sums = [sum(hashGrid[row[i]][0] for row in matrix_re) for i in range(len(matrix_re))]
-        decryptedString = ''
-        for letter in decryptLetter(encrytped_str.decode(), col_sums):
-            decryptedString += letter
+        decrypted_string = ''
+        for letter in decryptLetter(encrypted_str, col_sums):
+            decrypted_string += letter
 
         # Write to Output File:
-        with open(argv.output, 'w') as outFile:
-            outFile.write(decryptedString)
+        with open(argv.output, 'w', encoding='ascii') as outFile:
+            outFile.write(decrypted_string)
 
 """
     @author: Silas Rodriguez
