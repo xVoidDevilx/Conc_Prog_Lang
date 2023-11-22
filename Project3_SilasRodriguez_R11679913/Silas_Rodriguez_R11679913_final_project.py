@@ -15,7 +15,7 @@ from multiprocessing import Pool, Manager
 import argparse
 from decryptLetter import decryptLetter
 import re
-
+import time
 """
     @author: Silas Rodriguez
     @brief: uses regex to justify valid seeds
@@ -54,7 +54,8 @@ def generateVector(n: int, seed: str):
         - hashgrid (dict): A dictionary representing the hashgrid for vector processing.
     @post: vector_w is updated with the chunk section assigned to process
 """
-def timeStepScatter(vector_r:list, vector_w:list, dim:int, chunk:tuple, hashgrid:dict):
+def timeStepScatter(args:tuple):
+    vector_r, vector_w, dim, chunk, hashgrid= args
     start, stop = chunk # unpack the range
     totalCells = len(vector_r)    # get the total elements
 
@@ -100,10 +101,14 @@ def run_vector_processing(args: tuple):
             vector_w = manager.list(vector)
             del vector
             for _ in range(100):
+                print(f'Starting itteration {1 + _}')
                 # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
-                pool.starmap(timeStepScatter, [(vector_r, vector_w, dim, chunk, hashGrid) for chunk in ranges])
-                
+                start = time.time()
+                pool.imap(timeStepScatter, [(vector_r, vector_w, dim, chunk, hashGrid) for chunk in ranges])
+                print(f'Compute time: {time.time() - start}')
+                start = time.time()
                 vector_r, vector_w = vector_w, vector_r # swap the two shared memory spaces
+                print(f'Time to swap: {time.time() - start}')
             vector_r = tuple(vector_r) # do this before exiting manager
     return vector_r
 
