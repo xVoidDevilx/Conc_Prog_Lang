@@ -100,6 +100,7 @@ def run_vector_processing(args: tuple):
             vector_w = manager.list(vector)
             del vector
             for i in range(100):
+                print(f'Starting itteration {i+1}...')
                 # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
                 pool.starmap(timeStepScatter, [(vector_r, vector_w, dim, chunk, hashGrid) for chunk in ranges])
                 

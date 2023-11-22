@@ -40,10 +40,10 @@ Note:
 '''
 def decryptLetter(letters, rotationValues):
     rotationString  = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ "
-    
+    length = len(rotationString)
     # Create a dictionary for constant-time lookup
     char_index_map = {char: index for index, char in enumerate(rotationString)}
 
     for letter, rotationValue in zip(letters, rotationValues):
         currentPosition = char_index_map[letter]
-        yield rotationString[(currentPosition + rotationValue) % 95]
+        yield rotationString[(currentPosition + rotationValue) % length]
