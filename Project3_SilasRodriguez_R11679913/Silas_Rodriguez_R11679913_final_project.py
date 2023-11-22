@@ -63,7 +63,7 @@ def timeStepScatter(args:tuple):
         This needs explaining:
         right, left, bottom, top, bottom-right corner, top-left corner, top-right corner, and bottom-left corner neighbors.
         Pre computing these 8 values based on the properties of a square matrix, one can QUICKLY access the possible neighbors of the 3 (corner), 5 (edge), or 8 (center) neighbors
-        any one cell can have by setting booleans when checking in order ... buckle up bukaroo
+        any one cell can have by setting booleans when checking in order
     """
     changes = []
     for i in range(start, stop):
@@ -201,6 +201,7 @@ def main(argv: argparse.Namespace, *args, **kwargs):
 
         # Write to Output File:
         with open(argv.output, 'w', encoding='ascii') as outFile:
+            decrypted_string = decrypted_string.strip() # remove leading and trailing whitespace
             outFile.write(decrypted_string)
 
 """
