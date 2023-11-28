@@ -15,6 +15,7 @@ from multiprocessing import Pool
 import argparse
 from decryptLetter import decryptLetter
 import re
+from time import time
 """
     @author: Silas Rodriguez
     @brief: uses regex to justify valid seeds
@@ -53,9 +54,13 @@ def generateVector(n: int, seed: str):
     @post: vector_w is updated with the chunk section assigned to process
 """
 def timeStepScatter(args:tuple):
-    vector, dim, chunk, hashgrid= args
+    vector_0, vector_1, rw , dim, chunk, hashgrid= args
     start, stop = chunk # unpack the range
-    totalCells = len(vector)    # get the total elements
+
+    vector_r = vector_0 if rw else vector_1
+    vector_w = vector_1 if rw else vector_0
+
+    totalCells = len(vector_0)    # get the total elements
 
     dim_p1 = dim+1
     dim_m1 = dim-1
@@ -85,12 +90,13 @@ def timeStepScatter(args:tuple):
         sum_neighbors = 0
         for offset, compute in compass_base.values():
             if compute:
-                sum_neighbors += hashgrid[vector[offset]][0]
+                sum_neighbors += hashgrid[vector_r[offset]][0]
+        vector_w[i] = hashgrid[vector_r[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens'])    #write the new values
         # append to the changes to be made
-        changes.append(hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens']))
+        # changes.append(hashgrid[vector[i]][1](sum_neighbors in hashgrid['primes'], sum_neighbors in hashgrid['evens']))
 
-    # return a tuple for chunk edited, and changes to be cast
-    return (start, stop, changes)
+    # # return a tuple for chunk edited, and changes to be cast
+    # return (start, stop, changes)
 
 """
     @author: Silas Rodriguez
@@ -100,14 +106,20 @@ def timeStepScatter(args:tuple):
 def run_vector_processing(args: tuple):
     vector, dim, ranges, hashGrid, process_count = args
     with Pool(process_count) as pool:
+        vector_0 = [*vector]
+        vector_1 = [*vector]
+        del vector
+        rw = False
         for _ in range(100):
+            print(f'Starting itteration {_+1}...')
+            rw = not rw
             # Only necessary information to the worker processes - each worker knows their chunk, so order will not matter
-            results = tuple(pool.imap_unordered(timeStepScatter, [(vector, dim, chunk, hashGrid) for chunk in ranges]))    # Trick I learned: tuple (imap) forces the computations instead of being lazy
+            tuple(pool.imap_unordered(timeStepScatter, [(vector_0, vector_1, rw, dim, chunk, hashGrid) for chunk in ranges]))    # Trick I learned: tuple (imap) forces the computations instead of being lazy
 
-            for result in results:
-                start, stop, changes = result
-                vector[start:stop] = changes
-    return tuple(vector)
+            # for result in results:
+            #     start, stop, changes = result
+            #     vector[start:stop] = changes
+    return vector_0 if not rw else vector_1
 
 """
     @brief: computes the chunks for each process
@@ -209,6 +221,7 @@ def main(argv: argparse.Namespace, *args, **kwargs):
     @return: None
 """
 if __name__ == '__main__':
+    start = time()
     # Phase 1.1: Data Retrieval
     print('Project :: R11679913')
 
@@ -225,3 +238,9 @@ if __name__ == '__main__':
     argv = parser.parse_args()
     
     main(argv)
+    end = time()
+    total_time = end - start
+    hours, remainder = divmod(total_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    
+    print(f'Total time: {int(hours)} hours, {int(minutes)} minutes, and {int(seconds)} seconds')
